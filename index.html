@@ -373,8 +373,8 @@
         .col-phone { width: 10%; } 
         .col-history { width: 6%; } 
         .col-note { width: 14%; }    
-        .col-address { width: 20%; }
-        .col-items { width: 22%; }
+        .col-address { width: 25%; }
+        .col-items { width: 14%; }
         .col-total { width: 7%; text-align: center; }
 
         /* Danh sách đơn hàng chưa gọi (Quick Box) */
@@ -456,6 +456,7 @@
             font-size: 1rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             border-bottom: 1px dashed rgba(255,255,255,0.1);
             padding-bottom: 10px;
         }
@@ -463,11 +464,29 @@
         .info-label {
             color: #aaa;
             font-weight: bold;
+            flex: 1;
         }
 
         .info-value {
             color: #fff;
+            flex: 1.5;
             text-align: right;
+        }
+
+        .info-input {
+            width: 100%;
+            padding: 6px 10px;
+            background-color: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.95rem;
+            text-align: right;
+        }
+
+        .info-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
         }
 
         .qr-section {
@@ -533,7 +552,7 @@
                 <div class="checkout-form">
                     <h3 style="font-size: 0.95rem; margin-bottom: 6px;">Thông tin giao hàng</h3>
                     <input type="text" id="customer-name" placeholder="Họ và tên người nhận">
-                    <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="12">
+                    <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="13">
                     <textarea id="customer-address" rows="3" placeholder="Địa chỉ giao hàng chi tiết (số nhà, tên đường...)"></textarea>
                     <button class="submit-order-btn" onclick="submitOrder()">Gửi Đơn Hàng</button>
                 </div>
@@ -585,36 +604,47 @@
             <h2>Thông Tin Thanh Toán & Doanh Nghiệp</h2>
             <div class="info-group">
                 <span class="info-label">Tên công ty:</span>
-                <span class="info-value"><b>CÔNG TY TNHH ĐẶT NƯỚC NHANH</b></span>
+                <span class="info-value"><input type="text" id="comp-name" class="info-input" value="CÔNG TY TNHH ĐẶT NƯỚC NHANH" oninput="saveCompanyInfo()"></span>
             </div>
             <div class="info-group">
                 <span class="info-label">Số điện thoại (Hotline):</span>
-                <span class="info-value">0912.345.678</span>
+                <span class="info-value"><input type="text" id="comp-phone" class="info-input" value="0912345678" oninput="saveCompanyInfo()"></span>
             </div>
             <div class="info-group">
                 <span class="info-label">Địa chỉ trụ sở:</span>
-                <span class="info-value">123 Đường Nước Sạch, Phường Bến Nghé, Quận 1, TP.HCM</span>
+                <span class="info-value"><input type="text" id="comp-address" class="info-input" value="123 Đường Nước Sạch, TP.HCM" oninput="saveCompanyInfo()"></span>
             </div>
             <div class="info-group">
                 <span class="info-label">Ngân hàng:</span>
-                <span class="info-value">Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)</span>
+                <span class="info-value">
+                    <select id="comp-bank" class="info-input" onchange="saveCompanyInfo(); updateQRCode();">
+                        <option value="970434">Eximbank</option>
+                        <option value="970436">Vietcombank</option>
+                        <option value="970415">VietinBank</option>
+                        <option value="970422">MB Bank</option>
+                        <option value="970407">Techcombank</option>
+                        <option value="970416">ACB</option>
+                        <option value="970418">BIDV</option>
+                        <option value="970423">TPBank</option>
+                        <option value="970432">VPBank</option>
+                    </select>
+                </span>
             </div>
             <div class="info-group">
                 <span class="info-label">Số tài khoản:</span>
-                <span class="info-value"><b style="color: var(--accent-color);">1234567898888</b></span>
+                <span class="info-value"><input type="text" id="comp-stk" class="info-input" value="1234567898888" oninput="saveCompanyInfo(); updateQRCode();"></span>
             </div>
             <div class="info-group" style="border-bottom: none;">
                 <span class="info-label">Chủ tài khoản:</span>
-                <span class="info-value">CONG TY TNHH DAT NUOC NHANH</span>
+                <span class="info-value"><input type="text" id="comp-owner" class="info-input" value="CONG TY TNHH DAT NUOC NHANH" oninput="saveCompanyInfo(); updateQRCode();"></span>
             </div>
 
             <div class="qr-section">
                 <h3>Mã QR Quét Thanh Toán</h3>
                 <div class="qr-box">
-                    <!-- Bạn có thể thay đổi đường dẫn ảnh QR code của bạn vào thuộc tính src dưới đây -->
-                    <img src="https://api.vietqr.io/image/970436-1234567898888-compact.jpg?amount=0&addInfo=Thanh%20toan%20don%20hang%20nuoc&accountName=CONG%20TY%20TNHH%20DAT%20NUOC%20NHANH" alt="Mã QR Ngân Hàng">
+                    <img id="qr-image" src="" alt="Mã QR Ngân Hàng">
                 </div>
-                <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">Dùng app ngân hàng bất kỳ để quét mã thanh toán</div>
+                <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">Mã QR tự động cập nhật theo số tài khoản và ngân hàng bạn chọn</div>
             </div>
         </div>
     </div>
@@ -631,6 +661,48 @@
 
         let cart = JSON.parse(localStorage.getItem('water_cart')) || [];
         let ordersList = JSON.parse(localStorage.getItem('water_orders')) || [];
+
+        // Tải thông tin công ty từ LocalStorage nếu có
+        let companyInfo = JSON.parse(localStorage.getItem('water_company_info')) || {
+            name: "CÔNG TY TNHH ĐẶT NƯỚC NHANH",
+            phone: "0912345678",
+            address: "123 Đường Nước Sạch, TP.HCM",
+            bank: "970434", // Mặc định là Eximbank (BIN: 970434)
+            stk: "1234567898888",
+            owner: "CONG TY TNHH DAT NUOC NHANH"
+        };
+
+        function initCompanyForm() {
+            document.getElementById('comp-name').value = companyInfo.name;
+            document.getElementById('comp-phone').value = companyInfo.phone;
+            document.getElementById('comp-address').value = companyInfo.address;
+            document.getElementById('comp-bank').value = companyInfo.bank;
+            document.getElementById('comp-stk').value = companyInfo.stk;
+            document.getElementById('comp-owner').value = companyInfo.owner;
+            updateQRCode();
+        }
+
+        function saveCompanyInfo() {
+            companyInfo = {
+                name: document.getElementById('comp-name').value,
+                phone: document.getElementById('comp-phone').value,
+                address: document.getElementById('comp-address').value,
+                bank: document.getElementById('comp-bank').value,
+                stk: document.getElementById('comp-stk').value,
+                owner: document.getElementById('comp-owner').value
+            };
+            localStorage.setItem('water_company_info', JSON.stringify(companyInfo));
+        }
+
+        function updateQRCode() {
+            const bankBin = document.getElementById('comp-bank').value;
+            const stk = document.getElementById('comp-stk').value.trim();
+            const owner = encodeURIComponent(document.getElementById('comp-owner').value.trim());
+            
+            // Đường dẫn API tạo mã QR tự động VietQR
+            const qrUrl = `https://api.vietqr.io/image/${bankBin}-${stk}-compact.jpg?amount=0&addInfo=Thanh%20toan%20don%20hang%20nuoc&accountName=${owner}`;
+            document.getElementById('qr-image').src = qrUrl;
+        }
 
         // Hàm chuyển đổi Tab giao diện
         function switchTab(tabId, btnElement) {
@@ -858,6 +930,7 @@
         renderProducts();
         updateCart();
         renderAll();
+        initCompanyForm();
 
         function formatPhone(phone) {
             const cleaned = ('' + phone).replace(/\D/g, '');
