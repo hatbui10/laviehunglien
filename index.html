@@ -43,11 +43,12 @@
             font-size: 1.6rem;
         }
 
-        /* Thanh điều hướng 2 nút chuyển đổi giao diện */
+        /* Thanh điều hướng các nút chuyển đổi giao diện */
         .nav-tabs {
             display: flex;
             gap: 12px;
             margin-bottom: 25px;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -82,25 +83,6 @@
 
         .tab-content.active {
             display: block;
-        }
-
-        .cart-btn {
-            background-color: var(--card-bg);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
-        }
-
-        .cart-btn:hover {
-            background-color: var(--accent-color);
-            color: #000;
         }
 
         .main-container {
@@ -391,8 +373,8 @@
         .col-phone { width: 10%; } 
         .col-history { width: 6%; } 
         .col-note { width: 14%; }    
-        .col-address { width: 25%; }
-        .col-items { width: 14%; }
+        .col-address { width: 20%; }
+        .col-items { width: 22%; }
         .col-total { width: 7%; text-align: center; }
 
         /* Danh sách đơn hàng chưa gọi (Quick Box) */
@@ -449,6 +431,68 @@
             border-top: 1px solid rgba(255,255,255,0.05);
             padding-top: 6px;
         }
+
+        /* Giao diện Thông tin Công ty & QR */
+        .company-info-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .company-info-container h2 {
+            color: var(--accent-color);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        .info-group {
+            margin-bottom: 15px;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .info-label {
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .info-value {
+            color: #fff;
+            text-align: right;
+        }
+
+        .qr-section {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .qr-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--accent-color);
+        }
+
+        .qr-box {
+            background-color: #fff;
+            padding: 15px;
+            display: inline-block;
+            border-radius: 10px;
+        }
+
+        .qr-box img {
+            width: 180px;
+            height: 180px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -457,10 +501,11 @@
         <h1>💧 Đặt Nước Nhanh</h1>
     </header>
 
-    <!-- Thanh chuyển đổi giao diện 2 nút -->
+    <!-- Thanh chuyển đổi giao diện 3 nút -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('orderTab', this)">🛒 Đặt Đơn Hàng Nước</button>
         <button class="tab-btn" onclick="switchTab('listTab', this)">📋 Danh Sách Đơn Hàng</button>
+        <button class="tab-btn" onclick="switchTab('companyTab', this)">🏢 Thông Tin Công Ty & QR</button>
     </div>
 
     <!-- MỤC 1: ĐẶT ĐƠN HÀNG NƯỚC -->
@@ -530,6 +575,46 @@
             <h2>🔔 Đơn Hàng Chưa Gọi (<span id="pending-count">0</span>)</h2>
             <div class="pending-grid" id="pending-grid-container">
                 <div style="color: #777; font-size: 0.9rem;">Không có đơn hàng nào cần gọi.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MỤC 3: THÔNG TIN CÔNG TY & QR -->
+    <div id="companyTab" class="tab-content">
+        <div class="company-info-container">
+            <h2>Thông Tin Thanh Toán & Doanh Nghiệp</h2>
+            <div class="info-group">
+                <span class="info-label">Tên công ty:</span>
+                <span class="info-value"><b>CÔNG TY TNHH ĐẶT NƯỚC NHANH</b></span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Số điện thoại (Hotline):</span>
+                <span class="info-value">0912.345.678</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Địa chỉ trụ sở:</span>
+                <span class="info-value">123 Đường Nước Sạch, Phường Bến Nghé, Quận 1, TP.HCM</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Ngân hàng:</span>
+                <span class="info-value">Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Số tài khoản:</span>
+                <span class="info-value"><b style="color: var(--accent-color);">1234567898888</b></span>
+            </div>
+            <div class="info-group" style="border-bottom: none;">
+                <span class="info-label">Chủ tài khoản:</span>
+                <span class="info-value">CONG TY TNHH DAT NUOC NHANH</span>
+            </div>
+
+            <div class="qr-section">
+                <h3>Mã QR Quét Thanh Toán</h3>
+                <div class="qr-box">
+                    <!-- Bạn có thể thay đổi đường dẫn ảnh QR code của bạn vào thuộc tính src dưới đây -->
+                    <img src="https://api.vietqr.io/image/970436-1234567898888-compact.jpg?amount=0&addInfo=Thanh%20toan%20don%20hang%20nuoc&accountName=CONG%20TY%20TNHH%20DAT%20NUOC%20NHANH" alt="Mã QR Ngân Hàng">
+                </div>
+                <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">Dùng app ngân hàng bất kỳ để quét mã thanh toán</div>
             </div>
         </div>
     </div>
