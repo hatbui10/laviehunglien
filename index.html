@@ -197,6 +197,9 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: var(--accent-color);
+           /* Thêm các dòng này nếu muốn đẩy hẳn số ra giữa khung */
+            flex-grow: 1;
+            text-align: center;
         }
 
         .checkout-form input, .checkout-form textarea {
@@ -352,7 +355,10 @@
         .col-note { width: 14%; }    
         .col-address { width: 20%; }
         .col-items { width: 22%; }
-        .col-total { width: 7%; }
+       .col-total { 
+            width: 7%; 
+            text-align: center; 
+             }
 
         /* Danh sách đơn hàng chưa gọi (Quick Box) */
         .pending-calls-section {
@@ -442,7 +448,7 @@
             <div class="checkout-form">
                 <h3 style="font-size: 0.95rem; margin-bottom: 6px;">Thông tin giao hàng</h3>
                 <input type="text" id="customer-name" placeholder="Họ và tên người nhận">
-                <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="13">
+                <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="12">
                 <textarea id="customer-address" rows="3" placeholder="Địa chỉ giao hàng chi tiết (số nhà, tên đường...)"></textarea>
                 <button class="submit-order-btn" onclick="submitOrder()">Gửi Đơn Hàng</button>
             </div>
@@ -668,7 +674,7 @@
                     </td>
                     <td>${order.address}</td>
                     <td>${order.items}</td>
-                    <td style="color: var(--accent-color); font-weight: bold; white-space: nowrap;">${order.total}</td>
+                    <td style="color: var(--accent-color); font-weight: bold; white-space: nowrap; text-align: center; vertical-align: middle;">${order.total}</td>
                 </tr>
             `).join('');
         }
