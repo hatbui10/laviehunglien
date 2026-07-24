@@ -1,4 +1,4 @@
-<!DOCTYPE html>    
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -33,7 +33,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
         }
@@ -41,6 +41,47 @@
         h1 {
             color: var(--accent-color);
             font-size: 1.6rem;
+        }
+
+        /* Thanh điều hướng 2 nút chuyển đổi giao diện */
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--accent-color);
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+        }
+
+        /* Các mục giao diện (Tab Content) */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .cart-btn {
@@ -197,9 +238,6 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: var(--accent-color);
-           /* Thêm các dòng này nếu muốn đẩy hẳn số ra giữa khung */
-            flex-grow: 1;
-            text-align: center;
         }
 
         .checkout-form input, .checkout-form textarea {
@@ -347,18 +385,15 @@
             outline: none;
         }
 
-        /* Tỉ lệ chiều rộng 8 cột (Tổng = 100%) */
+        /* Tỉ lệ chiều rộng 8 cột */
         .col-time { width: 5%; }
         .col-name { width: 9%; }
         .col-phone { width: 10%; } 
         .col-history { width: 6%; } 
         .col-note { width: 14%; }    
-        .col-address { width: 20%; }
-        .col-items { width: 22%; }
-       .col-total { 
-            width: 7%; 
-            text-align: center; 
-             }
+        .col-address { width: 25%; }
+        .col-items { width: 14%; }
+        .col-total { width: 7%; text-align: center; }
 
         /* Danh sách đơn hàng chưa gọi (Quick Box) */
         .pending-calls-section {
@@ -420,73 +455,82 @@
 
     <header>
         <h1>💧 Đặt Nước Nhanh</h1>
-        <button class="cart-btn" onclick="scrollToCart()">
-            🛒 Giỏ hàng (<span id="cart-count">0</span>)
-        </button>
     </header>
 
-    <div class="main-container">
-        <!-- Danh sách sản phẩm dạng lưới -->
-        <div>
-            <h2 style="margin-bottom: 12px; font-size: 1.3rem;">Danh Sách Sản Phẩm</h2>
-            <div class="products-grid" id="product-list"></div>
-        </div>
+    <!-- Thanh chuyển đổi giao diện 2 nút -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('orderTab', this)">🛒 Đặt Đơn Hàng Nước</button>
+        <button class="tab-btn" onclick="switchTab('listTab', this)">📋 Danh Sách Đơn Hàng</button>
+    </div>
 
-        <!-- Giỏ hàng & Form đặt hàng -->
-        <div class="cart-section" id="cart-section">
-            <h2>Giỏ Hàng Của Bạn</h2>
-            <ul class="cart-items" id="cart-items">
-                <li class="empty-cart">Giỏ hàng trống</li>
-            </ul>
-
-            <!-- Ô tổng tiền thanh toán -->
-            <div class="cart-total-box">
-                <span>Tổng thanh toán:</span>
-                <span class="cart-total-price" id="total-price">0 đ</span>
+    <!-- MỤC 1: ĐẶT ĐƠN HÀNG NƯỚC -->
+    <div id="orderTab" class="tab-content active">
+        <div class="main-container">
+            <!-- Danh sách sản phẩm dạng lưới -->
+            <div>
+                <h2 style="margin-bottom: 12px; font-size: 1.3rem;">Danh Sách Sản Phẩm</h2>
+                <div class="products-grid" id="product-list"></div>
             </div>
 
-            <div class="checkout-form">
-                <h3 style="font-size: 0.95rem; margin-bottom: 6px;">Thông tin giao hàng</h3>
-                <input type="text" id="customer-name" placeholder="Họ và tên người nhận">
-                <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="12">
-                <textarea id="customer-address" rows="3" placeholder="Địa chỉ giao hàng chi tiết (số nhà, tên đường...)"></textarea>
-                <button class="submit-order-btn" onclick="submitOrder()">Gửi Đơn Hàng</button>
+            <!-- Giỏ hàng & Form đặt hàng -->
+            <div class="cart-section" id="cart-section">
+                <h2>Giỏ Hàng Của Bạn</h2>
+                <ul class="cart-items" id="cart-items">
+                    <li class="empty-cart">Giỏ hàng trống</li>
+                </ul>
+
+                <!-- Ô tổng tiền thanh toán -->
+                <div class="cart-total-box">
+                    <span>Tổng thanh toán:</span>
+                    <span class="cart-total-price" id="total-price">0 đ</span>
+                </div>
+
+                <div class="checkout-form">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 6px;">Thông tin giao hàng</h3>
+                    <input type="text" id="customer-name" placeholder="Họ và tên người nhận">
+                    <input type="text" id="customer-phone" placeholder="Số điện thoại (VD: 0912345678)" oninput="formatPhoneInput(this)" maxlength="12">
+                    <textarea id="customer-address" rows="3" placeholder="Địa chỉ giao hàng chi tiết (số nhà, tên đường...)"></textarea>
+                    <button class="submit-order-btn" onclick="submitOrder()">Gửi Đơn Hàng</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- BẢNG QUẢN LÝ ĐƠN HÀNG -->
-    <div class="admin-section">
-        <div class="admin-header">
-            <h2>📋 Danh Sách Đơn Hàng Đã Nhận</h2>
-            <button class="clear-orders-btn" onclick="clearAllOrders()">🗑️ Xóa lịch sử</button>
+    <!-- MỤC 2: DANH SÁCH ĐƠN HÀNG -->
+    <div id="listTab" class="tab-content">
+        <!-- BẢNG QUẢN LÝ ĐƠN HÀNG -->
+        <div class="admin-section">
+            <div class="admin-header">
+                <h2>📋 Danh Sách Đơn Hàng Đã Nhận</h2>
+                <button class="clear-orders-btn" onclick="clearAllOrders()">🗑️ Xóa lịch sử</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th class="col-time">Thời gian</th>
+                            <th class="col-name">Họ tên</th>
+                            <th class="col-phone">Số điện thoại</th>
+                            <th class="col-history">Lịch sử cuộc gọi</th>
+                            <th class="col-note">Ghi chú</th>
+                            <th class="col-address">Địa chỉ</th>
+                            <th class="col-items">Sản phẩm & Giá</th>
+                            <th class="col-total">Tổng tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <tr><td colspan="8" style="text-align: center; color: #777;">Chưa có đơn hàng nào.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div style="overflow-x: auto;">
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th class="col-time">Thời gian</th>
-                        <th class="col-name">Họ tên</th>
-                        <th class="col-phone">Số điện thoại</th>
-                        <th class="col-history">Lịch sử cuộc gọi</th>
-                        <th class="col-note">Ghi chú</th>
-                        <th class="col-address">Địa chỉ</th>
-                        <th class="col-items">Sản phẩm & Giá</th>
-                        <th class="col-total">Tổng tiền</th>
-                    </tr>
-                </thead>
-                <tbody id="orders-table-body">
-                    <tr><td colspan="8" style="text-align: center; color: #777;">Chưa có đơn hàng nào.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- DANH SÁCH ĐƠN HÀNG CHƯA GỌI -->
-    <div class="pending-calls-section" style="margin-top: 25px;">
-        <h2>🔔 Đơn Hàng Chưa Gọi (<span id="pending-count">0</span>)</h2>
-        <div class="pending-grid" id="pending-grid-container">
-            <div style="color: #777; font-size: 0.9rem;">Không có đơn hàng nào cần gọi.</div>
+        <!-- DANH SÁCH ĐƠN HÀNG CHƯA GỌI -->
+        <div class="pending-calls-section">
+            <h2>🔔 Đơn Hàng Chưa Gọi (<span id="pending-count">0</span>)</h2>
+            <div class="pending-grid" id="pending-grid-container">
+                <div style="color: #777; font-size: 0.9rem;">Không có đơn hàng nào cần gọi.</div>
+            </div>
         </div>
     </div>
 
@@ -502,6 +546,18 @@
 
         let cart = JSON.parse(localStorage.getItem('water_cart')) || [];
         let ordersList = JSON.parse(localStorage.getItem('water_orders')) || [];
+
+        // Hàm chuyển đổi Tab giao diện
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
 
         function renderProducts() {
             const productList = document.getElementById('product-list');
@@ -542,10 +598,7 @@
         function updateCart() {
             localStorage.setItem('water_cart', JSON.stringify(cart));
             const cartItems = document.getElementById('cart-items');
-            const cartCount = document.getElementById('cart-count');
             const totalPrice = document.getElementById('total-price');
-
-            cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
 
             if (cart.length === 0) {
                 cartItems.innerHTML = '<li class="empty-cart">Giỏ hàng trống</li>';
@@ -569,10 +622,6 @@
             }).join('');
 
             totalPrice.textContent = total.toLocaleString() + ' đ';
-        }
-
-        function scrollToCart() {
-            document.getElementById('cart-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         function submitOrder() {
