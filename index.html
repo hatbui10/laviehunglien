@@ -276,7 +276,7 @@
             color: #fff;
         }
 
-        /* Bảng quản lý đơn hàng có đường kẻ dọc và ngang rõ ràng */
+        /* Bảng quản lý đơn hàng */
         table.orders-table {
             width: 100%;
             border-collapse: collapse;
@@ -288,22 +288,49 @@
 
         table.orders-table th, table.orders-table td {
             padding: 8px 8px;
-            border: 1px solid var(--border-color); /* Tạo đường kẻ bao quanh tất cả các ô (cả dọc và ngang) */
+            border: 1px solid var(--border-color);
             word-wrap: break-word;
-            vertical-align: top;
+            vertical-align: middle; /* Căn giữa theo chiều dọc cho đẹp mắt */
         }
 
         table.orders-table th {
             color: var(--accent-color);
             font-size: 0.85rem;
-            background-color: #252525; /* Làm nổi bật phần tiêu đề bảng */
+            background-color: #252525;
         }
 
-        /* Tỉ lệ chiều rộng các cột */
+        /* Đặt SĐT và nút Gọi cùng trên 1 hàng ngang */
+        .phone-cell {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: nowrap;
+        }
+
+        .call-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2e7d32;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .call-btn:hover {
+            background-color: #388e3c;
+        }
+
+        /* Tỉ lệ chiều rộng các cột (Nới rộng thêm cột SĐT) */
         .col-time { width: 13%; }
         .col-name { width: 13%; }
-        .col-phone { width: 11%; }
-        .col-address { width: 34%; }
+        .col-phone { width: 18%; } 
+        .col-address { width: 27%; }
         .col-items { width: 21%; }
         .col-total { width: 8%; }
     </style>
@@ -359,7 +386,7 @@
                     <tr>
                         <th class="col-time">Thời gian</th>
                         <th class="col-name">Họ tên</th>
-                        <th class="col-phone">SĐT</th>
+                        <th class="col-phone">SĐT & Gọi</th>
                         <th class="col-address">Địa chỉ</th>
                         <th class="col-items">Sản phẩm & Giá</th>
                         <th class="col-total">Tổng</th>
@@ -508,7 +535,12 @@
                 <tr>
                     <td>${order.time}</td>
                     <td><b>${order.name}</b></td>
-                    <td>${order.phone}</td>
+                    <td>
+                        <div class="phone-cell">
+                            <span>${order.phone}</span>
+                            <a href="tel:${order.phone}" class="call-btn">📞 Gọi</a>
+                        </div>
+                    </td>
                     <td>${order.address}</td>
                     <td>${order.items}</td>
                     <td style="color: var(--accent-color); font-weight: bold;">${order.total}</td>
