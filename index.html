@@ -284,7 +284,7 @@
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, ""); 
-        if (digits.startsWith("84")) digits = digits.substring(2);
+        if (digits.startsWith("84") && digits.length > 10) digits = digits.substring(2);
         if (digits.startsWith("0")) digits = digits.substring(1);
         return digits;
     }
@@ -305,7 +305,6 @@
         let count = 0;
 
         jsonRows.forEach(row => {
-            // Chuẩn hóa lại key của object (loại bỏ khoảng trắng thừa do Excel)
             let cleanRow = {};
             let rawPhone = "";
             
@@ -394,14 +393,12 @@
             return;
         }
 
-        // Hiển thị tất cả các cột có trong dòng dữ liệu của khách hàng
         for (let [columnTitle, cellValue] of Object.entries(customerObj)) {
             let itemDiv = document.createElement("div");
             itemDiv.className = "info-item";
             
             let stringVal = String(cellValue !== undefined && cellValue !== null ? cellValue : '---');
             
-            // Cho phép các cột dài chiếm trọn chiều ngang
             if (stringVal.length > 25 || columnTitle.toLowerCase().includes('địa chỉ') || columnTitle.toLowerCase().includes('ghi chú') || columnTitle.toLowerCase().includes('tên')) {
                 itemDiv.classList.add("full-width");
             }
@@ -451,12 +448,15 @@
             
             if (data && data.fields) {
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
-                let time = data.fields.time.stringValue;
+                let rawTime = data.fields.time.stringValue;
 
-                if (time.includes("[day]")) {
-                    let today = new Date().getDate();
-                    time = time.replace("[day]", today);
-                }
+                // Tự động lọc sạch mọi lỗi định dạng cũ và lấy giờ phút kết hợp ngày chuẩn trực tiếp từ thiết bị
+                let timeOnly = rawTime.replace(/\{day\}.*$/, '').split(' ')[0]; // Chỉ lấy phần giờ:phút
+                if (!timeOnly || timeOnly.length < 3) timeOnly = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                
+                let now = new Date();
+                let currentDate = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
+                let time = timeOnly + " " + currentDate;
 
                 let uniqueCallIdentifier = rawIncomingPhone + "_" + time;
                 if (uniqueCallIdentifier !== lastProcessedPhone) {
