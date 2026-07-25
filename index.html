@@ -2,73 +2,230 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hiển thị thông tin khách hàng gọi đến</title>
+    <title>Tra Cứu Khách Hàng - Cuộc Gọi Đến</title>
+    <!-- Thư viện đọc file Excel SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; text-align: center; }
-        .phone { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 15px 0; }
-        .info { font-size: 18px; color: #e74c3c; margin-bottom: 10px; }
-        .time { color: #7f8c8d; font-size: 14px; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #2ecc71;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --border-color: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 650px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h2, h3 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input[type="file"] {
+            background: #2c2c2c;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed var(--accent-color);
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        .status-msg {
+            font-size: 14px;
+            color: var(--accent-color);
+        }
+        .phone-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffaa00;
+            margin: 10px 0;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .info-item {
+            background: #252525;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+        }
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        .info-item span {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>📞 Cuộc Gọi Đến</h2>
-    <div class="phone" id="phoneNumber">Đang chờ cuộc gọi...</div>
-    <div class="info" id="customerInfo">Thông tin: ---</div>
-    <div class="time" id="callTime">---</div>
+<div class="container">
+    <!-- Phần 1: Tải file Excel danh sách khách hàng -->
+    <div class="card">
+        <h2>📁 Tải Dữ Liệu Khách Hàng (Excel)</h2>
+        <div class="upload-section">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
+            <div class="status-msg" id="uploadStatus">Chưa có file Excel nào được tải lên. Vui lòng chọn file của bạn.</div>
+        </div>
+    </div>
+
+    <!-- Phần 2: Hiển thị thông tin khách hàng khi gọi đến -->
+    <div class="card">
+        <h3>📞 Thông Tin Cuộc Gọi & Khách Hàng</h3>
+        <div>Số điện thoại đang gọi đến:</div>
+        <div class="phone-display" id="phoneNumber">Đang chờ cuộc gọi...</div>
+        <div style="font-size: 13px; color: var(--text-muted);" id="callTime">Thời gian: ---</div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <label>MÃ KHÁCH HÀNG</label>
+                <span id="cusId">---</span>
+            </div>
+            <div class="info-item">
+                <label>SỐ ĐIỆN THOẠI</label>
+                <span id="cusPhoneDisplay">---</span>
+            </div>
+            <div class="info-item full-width">
+                <label>HỌ VÀ TÊN</label>
+                <span id="cusName">---</span>
+            </div>
+            <div class="info-item full-width">
+                <label>ĐỊA CHỈ</label>
+                <span id="cusAddress">---</span>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Sử dụng Firebase SDK bản mới nhất qua CDN -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // Cấu hình Firebase của bạn (Lấy từ Project Settings > General > Your apps > Web app)
-    const firebaseConfig = {
-        projectId: "laviehunglien-1f741",
-        // Nếu dùng Firestore trực tiếp qua thư viện, bạn có thể cần thêm apiKey và authDomain ở đây.
-        // Tuy nhiên, cách đơn giản nhất không cần cấu hình phức tạp là dùng REST API dạng Fetch bên dưới.
-    };
-</script>
-
-<!-- Cách đơn giản không cần cấu hình SDK phức tạp: Dùng vòng lặp kiểm tra (Polling) qua Fetch API -->
 <script>
-    // Danh sách dữ liệu khách hàng mẫu (Bạn có thể thay thế bằng database riêng của bạn hoặc gọi API công ty)
-    const danhSachKhachHang = {
-        "0981234567": { name: "Nguyễn Văn A - VIP", note: "Khách mua máy lọc nước" },
-        "0912345678": { name: "Trần Thị B", note: "Khách hẹn bảo trì" }
-    };
+    let customerDatabase = {}; 
 
-    async function checkIncomingCall() {
+    // Hàm chuẩn hóa số điện thoại để so khớp
+    function cleanPhone(phoneStr) {
+        if (!phoneStr) return "";
+        let digits = String(phoneStr).replace(/\D/g, ""); 
+        if (digits.startsWith("84")) digits = digits.substring(2);
+        if (digits.startsWith("0")) digits = digits.substring(1);
+        return digits;
+    }
+
+    // Hàm tìm kiếm giá trị trong dòng Excel bất kể tên cột viết hoa/thường hay có khoảng trắng thừa
+    function getValByKeywords(row, keywords) {
+        for (let key of Object.keys(row)) {
+            let cleanKey = key.trim().toLowerCase();
+            for (let kw of keywords) {
+                if (cleanKey.includes(kw.toLowerCase())) {
+                    return row[key];
+                }
+            }
+        }
+        return '';
+    }
+
+    // 1. Đọc và xử lý file Excel
+    function handleExcelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+            
+            customerDatabase = {};
+            let count = 0;
+
+            jsonRows.forEach(row => {
+                let rawPhone = getValByKeywords(row, ['điện thoại', 'sđt', 'phone']);
+                let key = cleanPhone(rawPhone);
+                
+                if (key) {
+                    customerDatabase[key] = {
+                        id: getValByKeywords(row, ['mã khách', 'ma khach', 'mã kh']),
+                        name: getValByKeywords(row, ['họ và tên', 'ho va ten', 'tên', 'ten']),
+                        address: getValByKeywords(row, ['địa chỉ', 'dia chi', 'đ/c'])
+                    };
+                    count++;
+                }
+            });
+
+            document.getElementById("uploadStatus").innerText = `Đã tải thành công ${count} khách hàng từ file Excel!`;
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // 2. Lắng nghe dữ liệu số điện thoại gọi đến từ Firebase Firestore
+    async function checkIncomingCallFromFirebase() {
         const url = "https://firestore.googleapis.com/v1/projects/laviehunglien-1f741/databases/(default)/documents/incoming_call/current";
         try {
             let response = await fetch(url);
             let data = await response.json();
             
             if (data && data.fields) {
-                let phone = data.fields.phone.stringValue;
+                let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let time = data.fields.time.stringValue;
 
-                document.getElementById("phoneNumber").innerText = phone;
-                document.getElementById("callTime").innerText = "Thời gian: " + time;
+                document.getElementById("phoneNumber").innerText = rawIncomingPhone;
+                document.getElementById("callTime").innerText = "Thời gian gọi: " + time;
+                document.getElementById("cusPhoneDisplay").innerText = rawIncomingPhone;
 
-                // Kiểm tra xem số điện thoại có trong danh sách khách hàng không
-                let customer = danhSachKhachHang[phone];
+                let searchKey = cleanPhone(rawIncomingPhone);
+                let customer = customerDatabase[searchKey];
+
                 if (customer) {
-                    document.getElementById("customerInfo").innerHTML = `<b>${customer.name}</b><br><small>${customer.note}</small>`;
+                    document.getElementById("cusId").innerText = customer.id || '---';
+                    document.getElementById("cusName").innerText = customer.name || 'Không rõ';
+                    document.getElementById("cusAddress").innerText = customer.address || 'Chưa cập nhật';
                 } else {
-                    document.getElementById("customerInfo").innerText = "Khách hàng mới (Chưa có trong danh bạ)";
+                    document.getElementById("cusId").innerText = "---";
+                    document.getElementById("cusName").innerText = "Khách Hàng Mới (Chưa có trong Excel)";
+                    document.getElementById("cusAddress").innerText = "---";
                 }
             }
         } catch (error) {
-            console.error("Lỗi lấy dữ liệu:", error);
+            console.error("Đang chờ kết nối từ Firebase...", error);
         }
     }
 
     // Tự động kiểm tra cập nhật từ Firebase mỗi 3 giây
-    setInterval(checkIncomingCall, 3000);
+    setInterval(checkIncomingCallFromFirebase, 3000);
 </script>
 
 </body>
