@@ -11,7 +11,7 @@
             --bg-color: #0f172a;
             --card-bg: #1e293b;
             --accent-color: #10b981;
-            --accent-glow: rgba(16, 185, 129, 0.2);
+            --accent-glow: rgba(16, 185, 129, 0.4);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --border-color: #334155;
@@ -124,6 +124,48 @@
             font-size: 12px;
             color: var(--text-muted);
         }
+
+        /* --- HIỆU ỨNG NHẤP NHÁY VÀ LUNG LINH (GLOW & PULSE) --- */
+        @keyframes glowingBtn {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 5px rgba(16, 185, 129, 0.4), 0 0 10px rgba(16, 185, 129, 0.2);
+                border-color: rgba(16, 185, 129, 0.6);
+            }
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 30px rgba(52, 211, 153, 0.5);
+                border-color: rgba(52, 211, 153, 1);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 5px rgba(16, 185, 129, 0.4), 0 0 10px rgba(16, 185, 129, 0.2);
+                border-color: rgba(16, 185, 129, 0.6);
+            }
+        }
+
+        .btn-call-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+            border: 2px solid #34d399;
+            animation: glowingBtn 1.8s infinite ease-in-out;
+            transition: opacity 0.2s;
+        }
+        .btn-call-action:active {
+            opacity: 0.8;
+            transform: scale(0.97);
+        }
+
         /* Lưới hiển thị động tất cả các cột */
         .info-grid {
             display: grid;
@@ -184,11 +226,10 @@
             font-weight: 700;
             color: #fbbf24;
             font-size: 14px;
+            text-decoration: none;
         }
-        .history-details {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
+        .history-phone:hover {
+            text-decoration: underline;
         }
         .empty-history {
             text-align: center;
@@ -215,13 +256,15 @@
         <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
     </div>
 
-    <!-- Phần 2: Thông tin cuộc gọi mới nhất (Tự động sinh ra toàn bộ cột) -->
+    <!-- Phần 2: Thông tin cuộc gọi mới nhất -->
     <div class="card">
         <div class="card-title">📞 Cuộc Gọi Gần Nhất</div>
         <div class="live-call-box">
             <div style="font-size: 12px; color: var(--text-muted);">SỐ ĐIỆN THOẠI GỌI ĐẾN</div>
             <div class="phone-display" id="phoneNumber">Đang chờ...</div>
             <div class="call-time" id="callTime">Thời gian: ---</div>
+            <!-- Nút gọi điện lung linh, nhấp nháy -->
+            <div id="callActionContainer"></div>
         </div>
 
         <!-- Khung chứa động tất cả các cột từ Excel -->
@@ -246,7 +289,6 @@
     let customerDatabase = {}; 
     let lastProcessedPhone = "";
 
-    // Làm sạch số điện thoại để làm khóa chính (Key) đối chiếu
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, ""); 
@@ -255,7 +297,6 @@
         return digits;
     }
 
-    // Định dạng số điện thoại hiển thị xxxx.xxx.xxx
     function formatPhoneNumber(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, "");
@@ -267,13 +308,11 @@
         return phoneStr;
     }
 
-    // Xử lý nạp toàn bộ các cột từ các dòng Excel vào bộ nhớ
     function processJsonRows(jsonRows) {
         customerDatabase = {};
         let count = 0;
 
         jsonRows.forEach(row => {
-            // Tự động tìm cột nào có chứa từ khóa điện thoại làm khóa chính
             let rawPhone = "";
             for (let key of Object.keys(row)) {
                 let lowerKey = key.trim().toLowerCase();
@@ -285,7 +324,6 @@
 
             let key = cleanPhone(rawPhone);
             if (key) {
-                // Lưu lại nguyên vẹn toàn bộ các cột của dòng đó vào object
                 customerDatabase[key] = row;
                 count++;
             }
@@ -341,7 +379,6 @@
         }
     };
 
-    // Hàm render động tất cả các cột ra giao diện
     function renderCustomerInfo(customerObj, formattedPhone, isNew) {
         const container = document.getElementById("dynamicInfoContainer");
         container.innerHTML = "";
@@ -360,12 +397,10 @@
             return;
         }
 
-        // Duyệt qua tất cả các tiêu đề cột (tối đa 20 cột hoặc bao nhiêu cũng được)
         for (let [columnTitle, cellValue] of Object.entries(customerObj)) {
             let itemDiv = document.createElement("div");
             itemDiv.className = "info-item";
             
-            // Nếu nội dung dài thì cho chiếm trọn 2 cột ngang của lưới
             let stringVal = String(cellValue || '---');
             if (stringVal.length > 25 || columnTitle.toLowerCase().includes('địa chỉ') || columnTitle.toLowerCase().includes('ghi chú')) {
                 itemDiv.classList.add("full-width");
@@ -379,7 +414,7 @@
         }
     }
 
-    function addHistoryItem(time, phoneFormatted, customerObj, isNew) {
+    function addHistoryItem(time, phoneFormatted, rawPhone, customerObj, isNew) {
         const container = document.getElementById("historyListContainer");
         
         if (container.querySelector('.empty-history')) {
@@ -391,7 +426,6 @@
         
         let summaryText = isNew ? "⚠️ Khách hàng mới" : "";
         if (!isNew && customerObj) {
-            // Lấy đại diện 1-2 trường thông tin đầu tiên (như Tên hoặc Mã) làm tóm tắt lịch sử
             let keys = Object.keys(customerObj);
             let firstVal = customerObj[keys[0]] || "";
             let secondVal = customerObj[keys[1]] || "";
@@ -400,7 +434,7 @@
 
         item.innerHTML = `
             <div class="history-header">
-                <span class="history-phone">${phoneFormatted}</span>
+                <a href="tel:${rawPhone}" class="history-phone">📞 ${phoneFormatted}</a>
                 <span>${time}</span>
             </div>
             <div style="font-weight: 600; color: ${isNew ? '#fca5a5' : '#f8fafc'}; font-size: 13px;">${summaryText}</div>
@@ -433,15 +467,19 @@
                     document.getElementById("phoneNumber").innerText = formattedPhone;
                     document.getElementById("callTime").innerText = "Thời gian: " + time;
 
+                    // Hiển thị nút gọi lại với hiệu ứng lung linh, nhấp nháy liên tục
+                    document.getElementById("callActionContainer").innerHTML = `
+                        <a href="tel:${rawIncomingPhone}" class="btn-call-action">
+                            <span>📞 Gọi Lại Ngay</span>
+                        </a>
+                    `;
+
                     let searchKey = cleanPhone(rawIncomingPhone);
                     let customerObj = customerDatabase[searchKey];
                     let isNew = !customerObj;
 
-                    // Gọi hàm tự động tạo giao diện cho toàn bộ các cột
                     renderCustomerInfo(customerObj, formattedPhone, isNew);
-
-                    // Thêm vào lịch sử
-                    addHistoryItem(time, formattedPhone, customerObj, isNew);
+                    addHistoryItem(time, formattedPhone, rawIncomingPhone, customerObj, isNew);
                 }
             }
         } catch (error) {
