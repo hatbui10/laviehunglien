@@ -124,6 +124,7 @@
             font-size: 12px;
             color: var(--text-muted);
         }
+        /* Lưới hiển thị động tất cả các cột */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -184,14 +185,10 @@
             color: #fbbf24;
             font-size: 14px;
         }
-        .history-name {
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--text-main);
-        }
-        .history-address {
+        .history-details {
             font-size: 12px;
             color: var(--text-muted);
+            margin-top: 2px;
         }
         .empty-history {
             text-align: center;
@@ -218,7 +215,7 @@
         <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
     </div>
 
-    <!-- Phần 2: Thông tin cuộc gọi mới nhất -->
+    <!-- Phần 2: Thông tin cuộc gọi mới nhất (Tự động sinh ra toàn bộ cột) -->
     <div class="card">
         <div class="card-title">📞 Cuộc Gọi Gần Nhất</div>
         <div class="live-call-box">
@@ -227,22 +224,11 @@
             <div class="call-time" id="callTime">Thời gian: ---</div>
         </div>
 
-        <div class="info-grid">
-            <div class="info-item">
-                <label>Mã Khách Hàng</label>
-                <span id="cusId">---</span>
-            </div>
-            <div class="info-item">
-                <label>Số Điện Thoại</label>
-                <span id="cusPhoneDisplay">---</span>
-            </div>
+        <!-- Khung chứa động tất cả các cột từ Excel -->
+        <div class="info-grid" id="dynamicInfoContainer">
             <div class="info-item full-width">
-                <label>Họ và Tên</label>
-                <span id="cusName">---</span>
-            </div>
-            <div class="info-item full-width" id="addressCard">
-                <label>Địa Chỉ</label>
-                <span id="cusAddress">---</span>
+                <label>Trạng thái</label>
+                <span id="cusStatusText">Chưa có dữ liệu cuộc gọi</span>
             </div>
         </div>
     </div>
@@ -260,7 +246,7 @@
     let customerDatabase = {}; 
     let lastProcessedPhone = "";
 
-    // Hàm làm sạch số điện thoại để tra cứu trong Excel
+    // Làm sạch số điện thoại để làm khóa chính (Key) đối chiếu
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, ""); 
@@ -269,7 +255,7 @@
         return digits;
     }
 
-    // Hàm định dạng số điện thoại hiển thị dạng xxxx.xxx.xxx
+    // Định dạng số điện thoại hiển thị xxxx.xxx.xxx
     function formatPhoneNumber(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, "");
@@ -281,32 +267,26 @@
         return phoneStr;
     }
 
-    function getValByKeywords(row, keywords) {
-        for (let key of Object.keys(row)) {
-            let cleanKey = key.trim().toLowerCase();
-            for (let kw of keywords) {
-                if (cleanKey.includes(kw.toLowerCase())) {
-                    return row[key];
-                }
-            }
-        }
-        return '';
-    }
-
+    // Xử lý nạp toàn bộ các cột từ các dòng Excel vào bộ nhớ
     function processJsonRows(jsonRows) {
         customerDatabase = {};
         let count = 0;
 
         jsonRows.forEach(row => {
-            let rawPhone = getValByKeywords(row, ['điện thoại', 'sđt', 'phone']);
+            // Tự động tìm cột nào có chứa từ khóa điện thoại làm khóa chính
+            let rawPhone = "";
+            for (let key of Object.keys(row)) {
+                let lowerKey = key.trim().toLowerCase();
+                if (lowerKey.includes('điện thoại') || lowerKey.includes('sđt') || lowerKey.includes('phone')) {
+                    rawPhone = row[key];
+                    break;
+                }
+            }
+
             let key = cleanPhone(rawPhone);
-            
             if (key) {
-                customerDatabase[key] = {
-                    id: getValByKeywords(row, ['mã khách', 'ma khach', 'mã kh']),
-                    name: getValByKeywords(row, ['họ và tên', 'ho va ten', 'tên', 'ten']),
-                    address: getValByKeywords(row, ['địa chỉ', 'dia chi', 'đ/c'])
-                };
+                // Lưu lại nguyên vẹn toàn bộ các cột của dòng đó vào object
+                customerDatabase[key] = row;
                 count++;
             }
         });
@@ -337,7 +317,7 @@
                 console.log("Dung lượng vượt giới hạn lưu trữ.");
             }
 
-            document.getElementById("uploadStatus").innerText = `Đã nạp thành công ${count} khách hàng!`;
+            document.getElementById("uploadStatus").innerText = `Đã nạp thành công ${count} khách hàng với toàn bộ các cột!`;
         };
         reader.readAsArrayBuffer(file);
     }
@@ -361,7 +341,45 @@
         }
     };
 
-    function addHistoryItem(time, phoneFormatted, id, name, address, isNew) {
+    // Hàm render động tất cả các cột ra giao diện
+    function renderCustomerInfo(customerObj, formattedPhone, isNew) {
+        const container = document.getElementById("dynamicInfoContainer");
+        container.innerHTML = "";
+
+        if (isNew || !customerObj) {
+            container.innerHTML = `
+                <div class="info-item full-width new-customer">
+                    <label>Trạng thái</label>
+                    <span>⚠️ Khách Hàng Mới (Không có trong Excel)</span>
+                </div>
+                <div class="info-item full-width">
+                    <label>Số Điện Thoại</label>
+                    <span>${formattedPhone}</span>
+                </div>
+            `;
+            return;
+        }
+
+        // Duyệt qua tất cả các tiêu đề cột (tối đa 20 cột hoặc bao nhiêu cũng được)
+        for (let [columnTitle, cellValue] of Object.entries(customerObj)) {
+            let itemDiv = document.createElement("div");
+            itemDiv.className = "info-item";
+            
+            // Nếu nội dung dài thì cho chiếm trọn 2 cột ngang của lưới
+            let stringVal = String(cellValue || '---');
+            if (stringVal.length > 25 || columnTitle.toLowerCase().includes('địa chỉ') || columnTitle.toLowerCase().includes('ghi chú')) {
+                itemDiv.classList.add("full-width");
+            }
+
+            itemDiv.innerHTML = `
+                <label>${columnTitle}</label>
+                <span>${stringVal}</span>
+            `;
+            container.appendChild(itemDiv);
+        }
+    }
+
+    function addHistoryItem(time, phoneFormatted, customerObj, isNew) {
         const container = document.getElementById("historyListContainer");
         
         if (container.querySelector('.empty-history')) {
@@ -371,9 +389,13 @@
         const item = document.createElement("div");
         item.className = "history-item";
         
-        let nameDisplay = (id !== "---" ? "[" + id + "] " : "") + name;
-        if (isNew) {
-            nameDisplay = "⚠️ Khách Hàng Mới";
+        let summaryText = isNew ? "⚠️ Khách hàng mới" : "";
+        if (!isNew && customerObj) {
+            // Lấy đại diện 1-2 trường thông tin đầu tiên (như Tên hoặc Mã) làm tóm tắt lịch sử
+            let keys = Object.keys(customerObj);
+            let firstVal = customerObj[keys[0]] || "";
+            let secondVal = customerObj[keys[1]] || "";
+            summaryText = `[${firstVal}] ${secondVal}`;
         }
 
         item.innerHTML = `
@@ -381,8 +403,7 @@
                 <span class="history-phone">${phoneFormatted}</span>
                 <span>${time}</span>
             </div>
-            <div class="history-name" style="color: ${isNew ? '#fca5a5' : '#f8fafc'}">${nameDisplay}</div>
-            <div class="history-address">🏠 ${address}</div>
+            <div style="font-weight: 600; color: ${isNew ? '#fca5a5' : '#f8fafc'}; font-size: 13px;">${summaryText}</div>
         `;
 
         container.prepend(item);
@@ -398,7 +419,6 @@
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let time = data.fields.time.stringValue;
 
-                // Tự động thay thế [day] thành ngày hiện tại nếu MacroDroid chưa cấu hình đúng
                 if (time.includes("[day]")) {
                     let today = new Date().getDate();
                     time = time.replace("[day]", today);
@@ -412,42 +432,16 @@
 
                     document.getElementById("phoneNumber").innerText = formattedPhone;
                     document.getElementById("callTime").innerText = "Thời gian: " + time;
-                    document.getElementById("cusPhoneDisplay").innerText = formattedPhone;
 
                     let searchKey = cleanPhone(rawIncomingPhone);
-                    let customer = customerDatabase[searchKey];
+                    let customerObj = customerDatabase[searchKey];
+                    let isNew = !customerObj;
 
-                    let cusIdVal = "---";
-                    let cusNameVal = "";
-                    let cusAddressVal = "";
-                    let isNew = false;
+                    // Gọi hàm tự động tạo giao diện cho toàn bộ các cột
+                    renderCustomerInfo(customerObj, formattedPhone, isNew);
 
-                    const nameEl = document.getElementById("cusName");
-                    const addressCardEl = document.getElementById("addressCard");
-
-                    if (customer) {
-                        cusIdVal = customer.id || '---';
-                        cusNameVal = customer.name || 'Không rõ';
-                        cusAddressVal = customer.address || 'Chưa cập nhật';
-                        
-                        nameEl.classList.remove("new-customer");
-                        addressCardEl.style.borderColor = "var(--accent-color)";
-                    } else {
-                        cusIdVal = "---";
-                        cusNameVal = "Khách Hàng Mới (Chưa có trong Excel)";
-                        cusAddressVal = "---";
-                        isNew = true;
-
-                        nameEl.classList.add("new-customer");
-                        addressCardEl.style.borderColor = "var(--danger-color)";
-                    }
-
-                    document.getElementById("cusId").innerText = cusIdVal;
-                    document.getElementById("cusName").innerText = cusNameVal;
-                    document.getElementById("cusAddress").innerText = cusAddressVal;
-
-                    // Thêm vào lịch sử với số đã định dạng
-                    addHistoryItem(time, formattedPhone, cusIdVal, cusNameVal, cusAddressVal, isNew);
+                    // Thêm vào lịch sử
+                    addHistoryItem(time, formattedPhone, customerObj, isNew);
                 }
             }
         } catch (error) {
