@@ -260,12 +260,25 @@
     let customerDatabase = {}; 
     let lastProcessedPhone = "";
 
+    // Hàm làm sạch số điện thoại để tra cứu trong Excel
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, ""); 
         if (digits.startsWith("84")) digits = digits.substring(2);
         if (digits.startsWith("0")) digits = digits.substring(1);
         return digits;
+    }
+
+    // Hàm định dạng số điện thoại hiển thị dạng xxxx.xxx.xxx
+    function formatPhoneNumber(phoneStr) {
+        if (!phoneStr) return "";
+        let digits = String(phoneStr).replace(/\D/g, "");
+        if (digits.length === 10) {
+            return digits.replace(/(\d{4})(\d{3})(\d{3})/, "$1.$2.$3");
+        } else if (digits.length === 11) {
+            return digits.replace(/(\d{4})(\d{3})(\d{4})/, "$1.$2.$4");
+        }
+        return phoneStr;
     }
 
     function getValByKeywords(row, keywords) {
@@ -348,10 +361,9 @@
         }
     };
 
-    function addHistoryItem(time, phone, id, name, address, isNew) {
+    function addHistoryItem(time, phoneFormatted, id, name, address, isNew) {
         const container = document.getElementById("historyListContainer");
         
-        // Xóa thông báo trống nếu có
         if (container.querySelector('.empty-history')) {
             container.innerHTML = "";
         }
@@ -366,14 +378,14 @@
 
         item.innerHTML = `
             <div class="history-header">
-                <span class="history-phone">${phone}</span>
+                <span class="history-phone">${phoneFormatted}</span>
                 <span>${time}</span>
             </div>
             <div class="history-name" style="color: ${isNew ? '#fca5a5' : '#f8fafc'}">${nameDisplay}</div>
             <div class="history-address">🏠 ${address}</div>
         `;
 
-        container.prepend(item); // Đưa lên đầu danh sách
+        container.prepend(item);
     }
 
     async function checkIncomingCallFromFirebase() {
@@ -385,20 +397,22 @@
             if (data && data.fields) {
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let time = data.fields.time.stringValue;
-// Nếu chuỗi có chứa [day] do MacroDroid gửi lên, tự động thay bằng ngày hiện tại (ví dụ ngày 25)
-if (time.includes("[day]")) {
-    let today = new Date().getDate();
-    time = time.replace("[day]", today);
-}
 
+                // Tự động thay thế [day] thành ngày hiện tại nếu MacroDroid chưa cấu hình đúng
+                if (time.includes("[day]")) {
+                    let today = new Date().getDate();
+                    time = time.replace("[day]", today);
+                }
 
                 let uniqueCallIdentifier = rawIncomingPhone + "_" + time;
                 if (uniqueCallIdentifier !== lastProcessedPhone) {
                     lastProcessedPhone = uniqueCallIdentifier;
 
-                    document.getElementById("phoneNumber").innerText = rawIncomingPhone;
+                    let formattedPhone = formatPhoneNumber(rawIncomingPhone);
+
+                    document.getElementById("phoneNumber").innerText = formattedPhone;
                     document.getElementById("callTime").innerText = "Thời gian: " + time;
-                    document.getElementById("cusPhoneDisplay").innerText = rawIncomingPhone;
+                    document.getElementById("cusPhoneDisplay").innerText = formattedPhone;
 
                     let searchKey = cleanPhone(rawIncomingPhone);
                     let customer = customerDatabase[searchKey];
@@ -432,8 +446,8 @@ if (time.includes("[day]")) {
                     document.getElementById("cusName").innerText = cusNameVal;
                     document.getElementById("cusAddress").innerText = cusAddressVal;
 
-                    // Thêm vào lịch sử
-                    addHistoryItem(time, rawIncomingPhone, cusIdVal, cusNameVal, cusAddressVal, isNew);
+                    // Thêm vào lịch sử với số đã định dạng
+                    addHistoryItem(time, formattedPhone, cusIdVal, cusNameVal, cusAddressVal, isNew);
                 }
             }
         } catch (error) {
