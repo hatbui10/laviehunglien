@@ -125,7 +125,6 @@
             color: var(--text-muted);
         }
 
-        /* --- HIỆU ỨNG NHẤP NHÁY VÀ LUNG LINH (GLOW & PULSE) --- */
         @keyframes glowingBtn {
             0% {
                 transform: scale(1);
@@ -166,7 +165,6 @@
             transform: scale(0.97);
         }
 
-        /* Lưới hiển thị động tất cả các cột */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -199,7 +197,6 @@
             border-left-color: var(--danger-color) !important;
             color: #fca5a5 !important;
         }
-        /* Lịch sử cuộc gọi mobile */
         .history-list {
             display: flex;
             flex-direction: column;
@@ -246,7 +243,6 @@
         <span>📱 Tra Cứu Cuộc Gọi Đến</span>
     </div>
 
-    <!-- Phần 1: Tải file Excel -->
     <div class="card">
         <div class="card-title">📁 Dữ Liệu Khách Hàng</div>
         <div class="upload-wrapper">
@@ -256,18 +252,15 @@
         <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
     </div>
 
-    <!-- Phần 2: Thông tin cuộc gọi mới nhất -->
     <div class="card">
         <div class="card-title">📞 Cuộc Gọi Gần Nhất</div>
         <div class="live-call-box">
             <div style="font-size: 12px; color: var(--text-muted);">SỐ ĐIỆN THOẠI GỌI ĐẾN</div>
             <div class="phone-display" id="phoneNumber">Đang chờ...</div>
             <div class="call-time" id="callTime">Thời gian: ---</div>
-            <!-- Nút gọi điện lung linh, nhấp nháy -->
             <div id="callActionContainer"></div>
         </div>
 
-        <!-- Khung chứa động tất cả các cột từ Excel -->
         <div class="info-grid" id="dynamicInfoContainer">
             <div class="info-item full-width">
                 <label>Trạng thái</label>
@@ -276,7 +269,6 @@
         </div>
     </div>
 
-    <!-- Phần 3: Lịch sử cuộc gọi -->
     <div class="card">
         <div class="card-title">📋 Lịch Sử Cuộc Gọi Trong Ngày</div>
         <div class="history-list" id="historyListContainer">
@@ -313,18 +305,23 @@
         let count = 0;
 
         jsonRows.forEach(row => {
+            // Chuẩn hóa lại key của object (loại bỏ khoảng trắng thừa do Excel)
+            let cleanRow = {};
             let rawPhone = "";
+            
             for (let key of Object.keys(row)) {
-                let lowerKey = key.trim().toLowerCase();
+                let cleanKey = key.trim();
+                cleanRow[cleanKey] = row[key];
+                
+                let lowerKey = cleanKey.toLowerCase();
                 if (lowerKey.includes('điện thoại') || lowerKey.includes('sđt') || lowerKey.includes('phone')) {
                     rawPhone = row[key];
-                    break;
                 }
             }
 
             let key = cleanPhone(rawPhone);
             if (key) {
-                customerDatabase[key] = row;
+                customerDatabase[key] = cleanRow;
                 count++;
             }
         });
@@ -397,12 +394,15 @@
             return;
         }
 
+        // Hiển thị tất cả các cột có trong dòng dữ liệu của khách hàng
         for (let [columnTitle, cellValue] of Object.entries(customerObj)) {
             let itemDiv = document.createElement("div");
             itemDiv.className = "info-item";
             
-            let stringVal = String(cellValue || '---');
-            if (stringVal.length > 25 || columnTitle.toLowerCase().includes('địa chỉ') || columnTitle.toLowerCase().includes('ghi chú')) {
+            let stringVal = String(cellValue !== undefined && cellValue !== null ? cellValue : '---');
+            
+            // Cho phép các cột dài chiếm trọn chiều ngang
+            if (stringVal.length > 25 || columnTitle.toLowerCase().includes('địa chỉ') || columnTitle.toLowerCase().includes('ghi chú') || columnTitle.toLowerCase().includes('tên')) {
                 itemDiv.classList.add("full-width");
             }
 
@@ -467,7 +467,6 @@
                     document.getElementById("phoneNumber").innerText = formattedPhone;
                     document.getElementById("callTime").innerText = "Thời gian: " + time;
 
-                    // Hiển thị nút gọi lại với hiệu ứng lung linh, nhấp nháy liên tục
                     document.getElementById("callActionContainer").innerHTML = `
                         <a href="tel:${rawIncomingPhone}" class="btn-call-action">
                             <span>📞 Gọi Lại Ngay</span>
