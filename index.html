@@ -1,4 +1,4 @@
-<!DOCTYPE html>. 
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -16,6 +16,7 @@
             --text-muted: #94a3b8;
             --border-color: #334155;
             --danger-color: #ef4444;
+            --badge-bg: #334155;
         }
         * {
             box-sizing: border-box;
@@ -63,7 +64,7 @@
             color: var(--accent-color);
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
         }
         .upload-wrapper {
             position: relative;
@@ -216,8 +217,14 @@
         .history-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             font-size: 12px;
             color: var(--text-muted);
+        }
+        .history-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .history-phone {
             font-weight: 700;
@@ -228,11 +235,34 @@
         .history-phone:hover {
             text-decoration: underline;
         }
+        .call-count-badge {
+            background-color: var(--badge-bg);
+            color: #34d399;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+        }
         .empty-history {
             text-align: center;
             color: var(--text-muted);
             font-size: 13px;
             padding: 16px;
+        }
+        .btn-clear {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-clear:hover {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
         }
     </style>
 </head>
@@ -270,7 +300,10 @@
     </div>
 
     <div class="card">
-        <div class="card-title">📋 Lịch Sử Cuộc Gọi Trong Ngày</div>
+        <div class="card-title">
+            <span>📋 Lịch Sử Cuộc Gọi</span>
+            <button class="btn-clear" onclick="clearHistory()">Xóa lịch sử</button>
+        </div>
         <div class="history-list" id="historyListContainer">
             <div class="empty-history">Chưa có cuộc gọi nào trong phiên này.</div>
         </div>
@@ -279,7 +312,7 @@
 
 <script>
     let customerDatabase = {}; 
-    let lastProcessedPhone = "";
+    let callHistoryArray = [];
 
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
@@ -347,33 +380,13 @@
             try {
                 localStorage.setItem('savedCustomerData', JSON.stringify(jsonRows));
                 localStorage.setItem('savedFileName', file.name);
-            } catch (err) {
-                console.log("Dung lượng vượt giới hạn lưu trữ.");
-            }
+            } catch (err) {}
 
-            document.getElementById("uploadStatus").innerText = `Đã nạp thành công ${count} khách hàng với toàn bộ các cột!`;
+            document.getElementById("uploadStatus").innerText = `Đã nạp thành công ${count} khách hàng!`;
+            renderHistoryUI();
         };
         reader.readAsArrayBuffer(file);
     }
-
-    window.onload = function() {
-        const savedData = localStorage.getItem('savedCustomerData');
-        const savedName = localStorage.getItem('savedFileName');
-        if (savedData) {
-            try {
-                const jsonRows = JSON.parse(savedData);
-                let count = processJsonRows(jsonRows);
-                if (savedName) {
-                    document.getElementById("uploadBtnText").innerText = "📂 " + savedName;
-                }
-                document.getElementById("uploadStatus").innerText = `Đã tự động nạp sẵn ${count} khách hàng từ bộ nhớ!`;
-            } catch (e) {
-                document.getElementById("uploadStatus").innerText = "Chưa chọn file Excel. Vui lòng bấm chọn file.";
-            }
-        } else {
-            document.getElementById("uploadStatus").innerText = "Chưa chọn file Excel. Vui lòng bấm chọn file.";
-        }
-    };
 
     function renderCustomerInfo(customerObj, formattedPhone, isNew) {
         const container = document.getElementById("dynamicInfoContainer");
@@ -411,34 +424,97 @@
         }
     }
 
-    function addHistoryItem(time, phoneFormatted, rawPhone, customerObj, isNew) {
-        const container = document.getElementById("historyListContainer");
-        
-        if (container.querySelector('.empty-history')) {
-            container.innerHTML = "";
-        }
-
-        const item = document.createElement("div");
-        item.className = "history-item";
-        
-        let summaryText = isNew ? "⚠️ Khách hàng mới" : "";
-        if (!isNew && customerObj) {
-            let keys = Object.keys(customerObj);
-            let firstVal = customerObj[keys[0]] || "";
-            let secondVal = customerObj[keys[1]] || "";
-            summaryText = `[${firstVal}] ${secondVal}`;
-        }
-
-        item.innerHTML = `
-            <div class="history-header">
-                <a href="tel:${rawPhone}" class="history-phone">📞 ${phoneFormatted}</a>
-                <span>${time}</span>
-            </div>
-            <div style="font-weight: 600; color: ${isNew ? '#fca5a5' : '#f8fafc'}; font-size: 13px;">${summaryText}</div>
-        `;
-
-        container.prepend(item);
+    function saveHistoryToStorage() {
+        try {
+            localStorage.setItem('callHistoryList', JSON.stringify(callHistoryArray));
+        } catch(e) {}
     }
+
+    function renderHistoryUI() {
+        const container = document.getElementById("historyListContainer");
+        container.innerHTML = "";
+
+        if (callHistoryArray.length === 0) {
+            container.innerHTML = `<div class="empty-history">Chưa có cuộc gọi nào trong phiên này.</div>`;
+            return;
+        }
+
+        callHistoryArray.forEach(item => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "history-item";
+            
+            let searchKey = cleanPhone(item.rawPhone);
+            let customerObj = customerDatabase[searchKey];
+            let isNew = !customerObj;
+
+            let summaryText = isNew ? "⚠️ Khách hàng mới" : "";
+            if (!isNew && customerObj) {
+                let keys = Object.keys(customerObj);
+                let firstVal = customerObj[keys[0]] || "";
+                let secondVal = customerObj[keys[1]] || "";
+                summaryText = `[${firstVal}] ${secondVal}`;
+            }
+
+            itemDiv.innerHTML = `
+                <div class="history-header">
+                    <div class="history-left">
+                        <a href="tel:${item.rawPhone}" class="history-phone">📞 ${item.phoneFormatted}</a>
+                        <span class="call-count-badge">Gọi ${item.count || 1} lần</span>
+                    </div>
+                    <span>${item.time}</span>
+                </div>
+                <div style="font-weight: 600; color: ${isNew ? '#fca5a5' : '#f8fafc'}; font-size: 13px;">${summaryText}</div>
+            `;
+            container.appendChild(itemDiv);
+        });
+    }
+
+    function clearHistory() {
+        if (confirm("Bạn có muốn xóa toàn bộ lịch sử cuộc gọi không?")) {
+            callHistoryArray = [];
+            localStorage.removeItem('callHistoryList');
+            renderHistoryUI();
+        }
+    }
+
+    window.onload = function() {
+        const savedData = localStorage.getItem('savedCustomerData');
+        const savedName = localStorage.getItem('savedFileName');
+        if (savedData) {
+            try {
+                const jsonRows = JSON.parse(savedData);
+                let count = processJsonRows(jsonRows);
+                if (savedName) {
+                    document.getElementById("uploadBtnText").innerText = "📂 " + savedName;
+                }
+                document.getElementById("uploadStatus").innerText = `Đã tự động nạp sẵn ${count} khách hàng từ bộ nhớ!`;
+            } catch (e) {}
+        } else {
+            document.getElementById("uploadStatus").innerText = "Chưa chọn file Excel. Vui lòng bấm chọn file.";
+        }
+
+        const savedHistory = localStorage.getItem('callHistoryList');
+        if (savedHistory) {
+            try {
+                callHistoryArray = JSON.parse(savedHistory);
+                renderHistoryUI();
+                if (callHistoryArray.length > 0) {
+                    let latest = callHistoryArray[0];
+                    document.getElementById("phoneNumber").innerText = latest.phoneFormatted;
+                    document.getElementById("callTime").innerText = "Thời gian gần nhất: " + latest.time;
+                    document.getElementById("callActionContainer").innerHTML = `
+                        <a href="tel:${latest.rawPhone}" class="btn-call-action">
+                            <span>📞 Gọi Lại Ngay</span>
+                        </a>
+                    `;
+                    let searchKey = cleanPhone(latest.rawPhone);
+                    renderCustomerInfo(customerDatabase[searchKey], latest.phoneFormatted, !customerDatabase[searchKey]);
+                }
+            } catch(e) {}
+        }
+    };
+
+    let lastProcessedPhone = "";
 
     async function checkIncomingCallFromFirebase() {
         const url = "https://firestore.googleapis.com/v1/projects/laviehunglien-1f741/databases/(default)/documents/incoming_call/current";
@@ -450,8 +526,7 @@
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let rawTime = data.fields.time.stringValue;
 
-                // Tự động lọc sạch mọi lỗi định dạng cũ và lấy giờ phút kết hợp ngày chuẩn trực tiếp từ thiết bị
-                let timeOnly = rawTime.replace(/\{day\}.*$/, '').split(' ')[0]; // Chỉ lấy phần giờ:phút
+                let timeOnly = rawTime.replace(/\{day\}.*$/, '').split(' ')[0];
                 if (!timeOnly || timeOnly.length < 3) timeOnly = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                 
                 let now = new Date();
@@ -459,13 +534,14 @@
                 let time = timeOnly + " " + currentDate;
 
                 let uniqueCallIdentifier = rawIncomingPhone + "_" + time;
-                if (uniqueCallIdentifier !== lastProcessedPhone) {
-                    lastProcessedPhone = uniqueCallIdentifier;
+                let isAlreadyLogged = callHistoryArray.length > 0 && (callHistoryArray[0].rawPhone === rawIncomingPhone && callHistoryArray[0].time === time);
 
+                if (uniqueCallIdentifier !== lastProcessedPhone && !isAlreadyLogged) {
+                    lastProcessedPhone = uniqueCallIdentifier;
                     let formattedPhone = formatPhoneNumber(rawIncomingPhone);
 
                     document.getElementById("phoneNumber").innerText = formattedPhone;
-                    document.getElementById("callTime").innerText = "Thời gian: " + time;
+                    document.getElementById("callTime").innerText = "Thời gian gần nhất: " + time;
 
                     document.getElementById("callActionContainer").innerHTML = `
                         <a href="tel:${rawIncomingPhone}" class="btn-call-action">
@@ -478,7 +554,32 @@
                     let isNew = !customerObj;
 
                     renderCustomerInfo(customerObj, formattedPhone, isNew);
-                    addHistoryItem(time, formattedPhone, rawIncomingPhone, customerObj, isNew);
+
+                    // Kiểm tra xem số này đã có trong lịch sử chưa
+                    let existingIndex = callHistoryArray.findIndex(item => cleanPhone(item.rawPhone) === cleanPhone(rawIncomingPhone));
+
+                    if (existingIndex !== -1) {
+                        // Nếu có rồi thì tăng số đếm lên và cập nhật lại thời gian mới nhất, sau đó đẩy lên đầu
+                        callHistoryArray[existingIndex].count = (callHistoryArray[existingIndex].count || 1) + 1;
+                        callHistoryArray[existingIndex].time = time;
+                        let itemToMove = callHistoryArray.splice(existingIndex, 1)[0];
+                        callHistoryArray.unshift(itemToMove);
+                    } else {
+                        // Nếu chưa có thì thêm mới vào đầu danh sách
+                        callHistoryArray.unshift({
+                            rawPhone: rawIncomingPhone,
+                            phoneFormatted: formattedPhone,
+                            time: time,
+                            count: 1
+                        });
+                    }
+
+                    if (callHistoryArray.length > 50) {
+                        callHistoryArray.pop();
+                    }
+
+                    saveHistoryToStorage();
+                    renderHistoryUI();
                 }
             }
         } catch (error) {
