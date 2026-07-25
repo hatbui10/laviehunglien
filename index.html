@@ -2,136 +2,263 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tra Cứu Khách Hàng - Cuộc Gọi Đến</title>
     <!-- Thư viện đọc file Excel SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-color: #2ecc71;
-            --text-main: #ffffff;
-            --text-muted: #b0b0b0;
-            --border-color: #333333;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.2);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --danger-color: #ef4444;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
         .container {
             width: 100%;
-            max-width: 650px;
+            max-width: 480px;
+        }
+        .header-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin: 8px 0 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-        h2, h3 {
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
             margin-top: 0;
+            margin-bottom: 12px;
             color: var(--accent-color);
-        }
-        .upload-section {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            align-items: center;
+            gap: 6px;
         }
-        input[type="file"] {
-            background: #2c2c2c;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px dashed var(--accent-color);
-            color: var(--text-main);
+        .upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .btn-upload {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            display: block;
             cursor: pointer;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            transition: opacity 0.2s;
+        }
+        .btn-upload:active {
+            opacity: 0.8;
+        }
+        .upload-wrapper input[type="file"] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+            width: 100%;
         }
         .status-msg {
-            font-size: 14px;
-            color: var(--accent-color);
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: center;
+            word-break: break-word;
+        }
+        .live-call-box {
+            background: linear-gradient(145deg, #182232, #1e293b);
+            border: 2px solid var(--accent-color);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 0 15px var(--accent-glow);
+            margin-bottom: 12px;
         }
         .phone-display {
-            font-size: 28px;
-            font-weight: bold;
-            color: #ffaa00;
-            margin: 10px 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: #fbbf24;
+            letter-spacing: 0.5px;
+            margin: 4px 0;
+        }
+        .call-time {
+            font-size: 12px;
+            color: var(--text-muted);
         }
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 10px;
         }
         .info-item {
-            background: #252525;
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent-color);
+            background: #111827;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border-left: 3.5px solid var(--accent-color);
         }
         .info-item label {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .info-item span {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 700;
+            word-break: break-word;
         }
         .full-width {
             grid-column: span 2;
+        }
+        .new-customer {
+            border-left-color: var(--danger-color) !important;
+            color: #fca5a5 !important;
+        }
+        /* Lịch sử cuộc gọi mobile */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-item {
+            background: #111827;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .history-phone {
+            font-weight: 700;
+            color: #fbbf24;
+            font-size: 14px;
+        }
+        .history-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+        .history-address {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .empty-history {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 16px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Phần 1: Tải file Excel danh sách khách hàng -->
-    <div class="card">
-        <h2>📁 Dữ Liệu Khách Hàng (Excel)</h2>
-        <div class="upload-section">
-            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
-            <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
-        </div>
+    <div class="header-title">
+        <span>📱 Tra Cứu Cuộc Gọi Đến</span>
     </div>
 
-    <!-- Phần 2: Hiển thị thông tin khách hàng khi gọi đến -->
+    <!-- Phần 1: Tải file Excel -->
     <div class="card">
-        <h3>📞 Thông Tin Cuộc Gọi & Khách Hàng</h3>
-        <div>Số điện thoại đang gọi đến:</div>
-        <div class="phone-display" id="phoneNumber">Đang chờ cuộc gọi...</div>
-        <div style="font-size: 13px; color: var(--text-muted);" id="callTime">Thời gian: ---</div>
+        <div class="card-title">📁 Dữ Liệu Khách Hàng</div>
+        <div class="upload-wrapper">
+            <div class="btn-upload" id="uploadBtnText">📂 Chọn File Excel Khách Hàng</div>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
+        </div>
+        <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
+    </div>
+
+    <!-- Phần 2: Thông tin cuộc gọi mới nhất -->
+    <div class="card">
+        <div class="card-title">📞 Cuộc Gọi Gần Nhất</div>
+        <div class="live-call-box">
+            <div style="font-size: 12px; color: var(--text-muted);">SỐ ĐIỆN THOẠI GỌI ĐẾN</div>
+            <div class="phone-display" id="phoneNumber">Đang chờ...</div>
+            <div class="call-time" id="callTime">Thời gian: ---</div>
+        </div>
 
         <div class="info-grid">
             <div class="info-item">
-                <label>MÃ KHÁCH HÀNG</label>
+                <label>Mã Khách Hàng</label>
                 <span id="cusId">---</span>
             </div>
             <div class="info-item">
-                <label>SỐ ĐIỆN THOẠI</label>
+                <label>Số Điện Thoại</label>
                 <span id="cusPhoneDisplay">---</span>
             </div>
             <div class="info-item full-width">
-                <label>HỌ VÀ TÊN</label>
+                <label>Họ và Tên</label>
                 <span id="cusName">---</span>
             </div>
-            <div class="info-item full-width">
-                <label>ĐỊA CHỈ</label>
+            <div class="info-item full-width" id="addressCard">
+                <label>Địa Chỉ</label>
                 <span id="cusAddress">---</span>
             </div>
+        </div>
+    </div>
+
+    <!-- Phần 3: Lịch sử cuộc gọi -->
+    <div class="card">
+        <div class="card-title">📋 Lịch Sử Cuộc Gọi Trong Ngày</div>
+        <div class="history-list" id="historyListContainer">
+            <div class="empty-history">Chưa có cuộc gọi nào trong phiên này.</div>
         </div>
     </div>
 </div>
 
 <script>
     let customerDatabase = {}; 
+    let lastProcessedPhone = "";
 
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
@@ -178,6 +305,8 @@
         const file = event.target.files[0];
         if (!file) return;
 
+        document.getElementById("uploadBtnText").innerText = "📂 " + file.name;
+
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
@@ -190,29 +319,62 @@
 
             try {
                 localStorage.setItem('savedCustomerData', JSON.stringify(jsonRows));
+                localStorage.setItem('savedFileName', file.name);
             } catch (err) {
                 console.log("Dung lượng vượt giới hạn lưu trữ.");
             }
 
-            document.getElementById("uploadStatus").innerText = `Đã cập nhật thành công ${count} khách hàng từ file Excel!`;
+            document.getElementById("uploadStatus").innerText = `Đã nạp thành công ${count} khách hàng!`;
         };
         reader.readAsArrayBuffer(file);
     }
 
     window.onload = function() {
         const savedData = localStorage.getItem('savedCustomerData');
+        const savedName = localStorage.getItem('savedFileName');
         if (savedData) {
             try {
                 const jsonRows = JSON.parse(savedData);
                 let count = processJsonRows(jsonRows);
+                if (savedName) {
+                    document.getElementById("uploadBtnText").innerText = "📂 " + savedName;
+                }
                 document.getElementById("uploadStatus").innerText = `Đã tự động nạp sẵn ${count} khách hàng từ bộ nhớ!`;
             } catch (e) {
-                document.getElementById("uploadStatus").innerText = "Chưa có file Excel nào được chọn. Vui lòng tải lên.";
+                document.getElementById("uploadStatus").innerText = "Chưa chọn file Excel. Vui lòng bấm chọn file.";
             }
         } else {
-            document.getElementById("uploadStatus").innerText = "Chưa có file Excel nào được chọn. Vui lòng tải lên.";
+            document.getElementById("uploadStatus").innerText = "Chưa chọn file Excel. Vui lòng bấm chọn file.";
         }
     };
+
+    function addHistoryItem(time, phone, id, name, address, isNew) {
+        const container = document.getElementById("historyListContainer");
+        
+        // Xóa thông báo trống nếu có
+        if (container.querySelector('.empty-history')) {
+            container.innerHTML = "";
+        }
+
+        const item = document.createElement("div");
+        item.className = "history-item";
+        
+        let nameDisplay = (id !== "---" ? "[" + id + "] " : "") + name;
+        if (isNew) {
+            nameDisplay = "⚠️ Khách Hàng Mới";
+        }
+
+        item.innerHTML = `
+            <div class="history-header">
+                <span class="history-phone">${phone}</span>
+                <span>${time}</span>
+            </div>
+            <div class="history-name" style="color: ${isNew ? '#fca5a5' : '#f8fafc'}">${nameDisplay}</div>
+            <div class="history-address">🏠 ${address}</div>
+        `;
+
+        container.prepend(item); // Đưa lên đầu danh sách
+    }
 
     async function checkIncomingCallFromFirebase() {
         const url = "https://firestore.googleapis.com/v1/projects/laviehunglien-1f741/databases/(default)/documents/incoming_call/current";
@@ -224,21 +386,48 @@
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let time = data.fields.time.stringValue;
 
-                document.getElementById("phoneNumber").innerText = rawIncomingPhone;
-                document.getElementById("callTime").innerText = "Thời gian gọi: " + time;
-                document.getElementById("cusPhoneDisplay").innerText = rawIncomingPhone;
+                let uniqueCallIdentifier = rawIncomingPhone + "_" + time;
+                if (uniqueCallIdentifier !== lastProcessedPhone) {
+                    lastProcessedPhone = uniqueCallIdentifier;
 
-                let searchKey = cleanPhone(rawIncomingPhone);
-                let customer = customerDatabase[searchKey];
+                    document.getElementById("phoneNumber").innerText = rawIncomingPhone;
+                    document.getElementById("callTime").innerText = "Thời gian: " + time;
+                    document.getElementById("cusPhoneDisplay").innerText = rawIncomingPhone;
 
-                if (customer) {
-                    document.getElementById("cusId").innerText = customer.id || '---';
-                    document.getElementById("cusName").innerText = customer.name || 'Không rõ';
-                    document.getElementById("cusAddress").innerText = customer.address || 'Chưa cập nhật';
-                } else {
-                    document.getElementById("cusId").innerText = "---";
-                    document.getElementById("cusName").innerText = "Khách Hàng Mới (Chưa có trong Excel)";
-                    document.getElementById("cusAddress").innerText = "---";
+                    let searchKey = cleanPhone(rawIncomingPhone);
+                    let customer = customerDatabase[searchKey];
+
+                    let cusIdVal = "---";
+                    let cusNameVal = "";
+                    let cusAddressVal = "";
+                    let isNew = false;
+
+                    const nameEl = document.getElementById("cusName");
+                    const addressCardEl = document.getElementById("addressCard");
+
+                    if (customer) {
+                        cusIdVal = customer.id || '---';
+                        cusNameVal = customer.name || 'Không rõ';
+                        cusAddressVal = customer.address || 'Chưa cập nhật';
+                        
+                        nameEl.classList.remove("new-customer");
+                        addressCardEl.style.borderColor = "var(--accent-color)";
+                    } else {
+                        cusIdVal = "---";
+                        cusNameVal = "Khách Hàng Mới (Chưa có trong Excel)";
+                        cusAddressVal = "---";
+                        isNew = true;
+
+                        nameEl.classList.add("new-customer");
+                        addressCardEl.style.borderColor = "var(--danger-color)";
+                    }
+
+                    document.getElementById("cusId").innerText = cusIdVal;
+                    document.getElementById("cusName").innerText = cusNameVal;
+                    document.getElementById("cusAddress").innerText = cusAddressVal;
+
+                    // Thêm vào lịch sử
+                    addHistoryItem(time, rawIncomingPhone, cusIdVal, cusNameVal, cusAddressVal, isNew);
                 }
             }
         } catch (error) {
