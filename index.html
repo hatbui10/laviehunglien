@@ -2,59 +2,74 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hiển Thị Cuộc Gọi Đến Realtime</title>
-    <!-- Bootstrap CSS để làm giao diện đẹp mắt, gọn gàng -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Hiển thị thông tin khách hàng gọi đến</title>
     <style>
-        body { background-color: #f8f9fa; font-family: Arial, sans-serif; }
-        .card-call { margin-top: 80px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 15px; }
-        .phone-number { font-size: 2.5rem; color: #0d6efd; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        .phone { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 15px 0; }
+        .info { font-size: 18px; color: #e74c3c; margin-bottom: 10px; }
+        .time { color: #7f8c8d; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card card-call text-center p-4 bg-white">
-                    <h2 class="text-danger mb-3">📞 Cuộc Gọi Đến Mới</h2>
-                    <hr>
-                    <div class="card-body">
-                        <p class="text-muted mb-1">Số điện thoại khách hàng:</p>
-                        <div id="customerPhone" class="phone-number">Đang chờ cuộc gọi...</div>
-                        
-                        <p class="text-muted mt-4 mb-1">Thời gian gọi:</p>
-                        <p id="callTime" class="fs-4 text-secondary">---</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="card">
+    <h2>📞 Cuộc Gọi Đến</h2>
+    <div class="phone" id="phoneNumber">Đang chờ cuộc gọi...</div>
+    <div class="info" id="customerInfo">Thông tin: ---</div>
+    <div class="time" id="callTime">---</div>
+</div>
 
-    <!-- Firebase SDK Compat (Phiên bản tương thích chạy trực tiếp trên HTML) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<!-- Sử dụng Firebase SDK bản mới nhất qua CDN -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <script>
-        // Cấu hình Firebase kết nối trực tiếp tới Database của bạn
-        const firebaseConfig = {
-            databaseURL: "https://laviehunglien-a1538-default-rtdb.firebaseio.com/"
-        };
+    // Cấu hình Firebase của bạn (Lấy từ Project Settings > General > Your apps > Web app)
+    const firebaseConfig = {
+        projectId: "laviehunglien-1f741",
+        // Nếu dùng Firestore trực tiếp qua thư viện, bạn có thể cần thêm apiKey và authDomain ở đây.
+        // Tuy nhiên, cách đơn giản nhất không cần cấu hình phức tạp là dùng REST API dạng Fetch bên dưới.
+    };
+</script>
 
-        // Khởi tạo Firebase
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref("incoming_calls");
+<!-- Cách đơn giản không cần cấu hình SDK phức tạp: Dùng vòng lặp kiểm tra (Polling) qua Fetch API -->
+<script>
+    // Danh sách dữ liệu khách hàng mẫu (Bạn có thể thay thế bằng database riêng của bạn hoặc gọi API công ty)
+    const danhSachKhachHang = {
+        "0981234567": { name: "Nguyễn Văn A - VIP", note: "Khách mua máy lọc nước" },
+        "0912345678": { name: "Trần Thị B", note: "Khách hẹn bảo trì" }
+    };
 
-        // Lắng nghe dữ liệu thay đổi trên Firebase theo thời gian thực (Realtime)
-        dbRef.on("value", (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                // Cập nhật số điện thoại và thời gian lên giao diện HTML
-                document.getElementById("customerPhone").innerText = data.phone || "Không xác định";
-                document.getElementById("callTime").innerText = data.time || "";
+    async function checkIncomingCall() {
+        const url = "https://firestore.googleapis.com/v1/projects/laviehunglien-1f741/databases/(default)/documents/incoming_call/current";
+        try {
+            let response = await fetch(url);
+            let data = await response.json();
+            
+            if (data && data.fields) {
+                let phone = data.fields.phone.stringValue;
+                let time = data.fields.time.stringValue;
+
+                document.getElementById("phoneNumber").innerText = phone;
+                document.getElementById("callTime").innerText = "Thời gian: " + time;
+
+                // Kiểm tra xem số điện thoại có trong danh sách khách hàng không
+                let customer = danhSachKhachHang[phone];
+                if (customer) {
+                    document.getElementById("customerInfo").innerHTML = `<b>${customer.name}</b><br><small>${customer.note}</small>`;
+                } else {
+                    document.getElementById("customerInfo").innerText = "Khách hàng mới (Chưa có trong danh bạ)";
+                }
             }
-        });
-    </script>
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu:", error);
+        }
+    }
+
+    // Tự động kiểm tra cập nhật từ Firebase mỗi 3 giây
+    setInterval(checkIncomingCall, 3000);
+</script>
+
 </body>
 </html>
