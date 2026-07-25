@@ -385,6 +385,12 @@
             if (data && data.fields) {
                 let rawIncomingPhone = data.fields.phone.stringValue.trim();
                 let time = data.fields.time.stringValue;
+// Nếu chuỗi có chứa [day] do MacroDroid gửi lên, tự động thay bằng ngày hiện tại (ví dụ ngày 25)
+if (time.includes("[day]")) {
+    let today = new Date().getDate();
+    time = time.replace("[day]", today);
+}
+
 
                 let uniqueCallIdentifier = rawIncomingPhone + "_" + time;
                 if (uniqueCallIdentifier !== lastProcessedPhone) {
