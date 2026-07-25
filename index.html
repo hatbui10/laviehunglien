@@ -95,10 +95,10 @@
 <div class="container">
     <!-- Phần 1: Tải file Excel danh sách khách hàng -->
     <div class="card">
-        <h2>📁 Tải Dữ Liệu Khách Hàng (Excel)</h2>
+        <h2>📁 Dữ Liệu Khách Hàng (Excel)</h2>
         <div class="upload-section">
             <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
-            <div class="status-msg" id="uploadStatus">Chưa có file Excel nào được tải lên. Vui lòng chọn file của bạn.</div>
+            <div class="status-msg" id="uploadStatus">Đang tải dữ liệu...</div>
         </div>
     </div>
 
@@ -133,7 +133,6 @@
 <script>
     let customerDatabase = {}; 
 
-    // Hàm chuẩn hóa số điện thoại để so khớp
     function cleanPhone(phoneStr) {
         if (!phoneStr) return "";
         let digits = String(phoneStr).replace(/\D/g, ""); 
@@ -142,7 +141,6 @@
         return digits;
     }
 
-    // Hàm tìm kiếm giá trị trong dòng Excel bất kể tên cột viết hoa/thường hay có khoảng trắng thừa
     function getValByKeywords(row, keywords) {
         for (let key of Object.keys(row)) {
             let cleanKey = key.trim().toLowerCase();
@@ -155,7 +153,27 @@
         return '';
     }
 
-    // 1. Đọc và xử lý file Excel
+    function processJsonRows(jsonRows) {
+        customerDatabase = {};
+        let count = 0;
+
+        jsonRows.forEach(row => {
+            let rawPhone = getValByKeywords(row, ['điện thoại', 'sđt', 'phone']);
+            let key = cleanPhone(rawPhone);
+            
+            if (key) {
+                customerDatabase[key] = {
+                    id: getValByKeywords(row, ['mã khách', 'ma khach', 'mã kh']),
+                    name: getValByKeywords(row, ['họ và tên', 'ho va ten', 'tên', 'ten']),
+                    address: getValByKeywords(row, ['địa chỉ', 'dia chi', 'đ/c'])
+                };
+                count++;
+            }
+        });
+
+        return count;
+    }
+
     function handleExcelUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -168,30 +186,34 @@
             const worksheet = workbook.Sheets[firstSheetName];
             
             const jsonRows = XLSX.utils.sheet_to_json(worksheet);
-            
-            customerDatabase = {};
-            let count = 0;
+            let count = processJsonRows(jsonRows);
 
-            jsonRows.forEach(row => {
-                let rawPhone = getValByKeywords(row, ['điện thoại', 'sđt', 'phone']);
-                let key = cleanPhone(rawPhone);
-                
-                if (key) {
-                    customerDatabase[key] = {
-                        id: getValByKeywords(row, ['mã khách', 'ma khach', 'mã kh']),
-                        name: getValByKeywords(row, ['họ và tên', 'ho va ten', 'tên', 'ten']),
-                        address: getValByKeywords(row, ['địa chỉ', 'dia chi', 'đ/c'])
-                    };
-                    count++;
-                }
-            });
+            try {
+                localStorage.setItem('savedCustomerData', JSON.stringify(jsonRows));
+            } catch (err) {
+                console.log("Dung lượng vượt giới hạn lưu trữ.");
+            }
 
-            document.getElementById("uploadStatus").innerText = `Đã tải thành công ${count} khách hàng từ file Excel!`;
+            document.getElementById("uploadStatus").innerText = `Đã cập nhật thành công ${count} khách hàng từ file Excel!`;
         };
         reader.readAsArrayBuffer(file);
     }
 
-    // 2. Lắng nghe dữ liệu số điện thoại gọi đến từ Firebase Firestore
+    window.onload = function() {
+        const savedData = localStorage.getItem('savedCustomerData');
+        if (savedData) {
+            try {
+                const jsonRows = JSON.parse(savedData);
+                let count = processJsonRows(jsonRows);
+                document.getElementById("uploadStatus").innerText = `Đã tự động nạp sẵn ${count} khách hàng từ bộ nhớ!`;
+            } catch (e) {
+                document.getElementById("uploadStatus").innerText = "Chưa có file Excel nào được chọn. Vui lòng tải lên.";
+            }
+        } else {
+            document.getElementById("uploadStatus").innerText = "Chưa có file Excel nào được chọn. Vui lòng tải lên.";
+        }
+    };
+
     async function checkIncomingCallFromFirebase() {
         const url = "https://firestore.googleapis.com/v1/projects/laviehunglien-1f741/databases/(default)/documents/incoming_call/current";
         try {
@@ -224,7 +246,6 @@
         }
     }
 
-    // Tự động kiểm tra cập nhật từ Firebase mỗi 3 giây
     setInterval(checkIncomingCallFromFirebase, 3000);
 </script>
 
